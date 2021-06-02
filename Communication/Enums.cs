@@ -12,9 +12,9 @@ namespace CRCTray.Communication
         internal const string Delete = "delete";
 
         internal const string ConsoleUrl = "webconsoleurl";
-        internal const string Config = "getconfig";
-
+        internal const string ConfigGet = "config/get";
+        internal const string ConfigSet = "config/set";
+        internal const string ConfigUnset = "config/unset";
         internal const string Logs = "logs";
     }
-
 }

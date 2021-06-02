@@ -1,58 +1,55 @@
 ﻿using System;
 using System.Text;
 using System.Net;
-using System.Net.Sockets;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Windows.Forms;
+using System.Threading;
+using System.Threading.Tasks;
+using HttpOverStream.Client;
+using HttpOverStream.NamedPipe;
+
 
 namespace CRCTray.Communication
 {
 
 	static class DaemonCommander
 	{
-		static private string socketPath = string.Format("{0}\\.crc\\crc.sock", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+		private static readonly string _daemonHTTPNamedPipe = "crc-http";
 
-		public class DaemonException : Exception
+		private static T getResultsForBasicCommand<T>(string command, int timeout = 20)
 		{
-			public DaemonException(string message) : base(message)
-			{
-			}
-		}
-		
-		private static T getResultsForBasicCommand<T>(string command)
-		{
-			var output = SendBasicCommand(command);
-			var options = new JsonSerializerOptions
-			{
-				IgnoreNullValues = true
-			};
-			var status = JsonSerializer.Deserialize<Result>(output, options);
-			if (status.Success)
-			{
-				return JsonSerializer.Deserialize<T>(output, options);
-			}
-			throw new DaemonException(status.Error);
+			return JsonSerializer.Deserialize<T>(SendBasicCommand(command, timeout));
 		}
 
 		public static StatusResult Status()
 		{
 			return getResultsForBasicCommand<StatusResult>(BasicCommands.Status);
+
+			// 200 status command was successful (json returned)
+			// 500 could refer to VM not existing
 		}
 
 		public static VersionResult Version()
 		{
 			return getResultsForBasicCommand<VersionResult>(BasicCommands.Version);
+
+			// 200
 		}
 
 		public static StartResult Start()
 		{
-			return getResultsForBasicCommand<StartResult>(BasicCommands.Start);
+			return getResultsForBasicCommand<StartResult>(BasicCommands.Start, 300);
+
+			// 200
+			// 500 could refer to VM already starting
 		}
 
 		public static StopResult Stop()
 		{
-			return getResultsForBasicCommand<StopResult>(BasicCommands.Stop);
+			return getResultsForBasicCommand<StopResult>(BasicCommands.Stop, 120);
+
+			// 500 could refer to VM already stopping
 		}
 
 		public static DeleteResult Delete()
@@ -67,68 +64,49 @@ namespace CRCTray.Communication
 
 		public static ConfigResult ConfigView()
 		{
-			return getResultsForBasicCommand<ConfigResult>(BasicCommands.Config);
+			return getResultsForBasicCommand<ConfigResult>(BasicCommands.ConfigGet);
 		}
 
 		public static SetUnsetConfig SetConfig(ConfigSetCommand cmd)
 		{
-			return JsonSerializer.Deserialize<SetUnsetConfig>(SendCommand(cmd));
+			return getResultsForBasicCommand<SetUnsetConfig>(BasicCommands.ConfigSet);
 		}
 
 		public static SetUnsetConfig UnsetConfig(ConfigUnsetCommand cmd)
 		{
-			return JsonSerializer.Deserialize<SetUnsetConfig>(SendCommand(cmd));
+			return getResultsForBasicCommand<SetUnsetConfig>(BasicCommands.ConfigGet);
 		}
 
-		public static Logs GetLogs()
+		public static LogsResult GetLogs()
         {
-			return getResultsForBasicCommand<Logs>(BasicCommands.Logs);
+			return getResultsForBasicCommand<LogsResult>(BasicCommands.Logs);
         }
 
-		private static string SendBasicCommand(string command)
+		private static string SendBasicCommand(string command, int timeout)
 		{
-            var cmd = JsonSerializer.Serialize(new BasicCommand(command));
-            return getSocketResponse(cmd);
+			return getResponse(command, timeout).Result;
 		}
 
-        private static string SendCommand(ConfigSetCommand command)
-		{
-			JsonSerializerOptions options = new JsonSerializerOptions();
-			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-			var cmd = JsonSerializer.Serialize(command, options);
-
-			return getSocketResponse(cmd);
-		}
-
-		private static string SendCommand(ConfigUnsetCommand command)
-		{
-			JsonSerializerOptions options = new JsonSerializerOptions();
-			options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-			var cmd = JsonSerializer.Serialize(command, options);
-
-			return getSocketResponse(cmd);
-		}
-
-		private static string getSocketResponse(string cmd)
+		private static async Task<string> getResponse(string cmd, int timeout)
 		{
 			try
 			{
-				Socket daemonSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-				UnixEndPoint daemonSocketEp = new UnixEndPoint(socketPath);
+				var httpClient = new NamedPipeHttpClientBuilder(_daemonHTTPNamedPipe)
+								.WithPerRequestTimeout(TimeSpan.FromSeconds(timeout))
+								.Build();
 
-				var resp = new byte[16 * 1024];
-				daemonSocket.Connect(daemonSocketEp);
-				byte[] msg = Encoding.ASCII.GetBytes(cmd);
-				daemonSocket.Send(msg);
-				daemonSocket.Receive(resp);
+				string command = String.Format("{0}/{1}", "/api", cmd);
+				HttpResponseMessage response = await httpClient.GetAsync(command);
 
-				var result = Encoding.ASCII.GetString(resp);
-				return result.Replace("\0", string.Empty);
+				// Allow 500
+				//response.EnsureSuccessStatusCode();
+
+				return await response.Content.ReadAsStringAsync();
 			}
 
-			catch (SocketException e)
+			catch (Exception e)
 			{
-				Console.WriteLine("Exception occured");
+				// re-throw to let the caller deal with the specific error codes
 				throw e;
 			}
 		}

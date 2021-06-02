@@ -20,6 +20,12 @@ namespace CRCTray.Communication
         public bool Success { get; set; }
     }
 
+    public class LogsResult
+    {
+        public bool Success { get; set; }
+        public string[] Messages { get; set; }
+    }
+
     public class StartResult
     {
         public string Name { get; set; }
@@ -163,9 +169,4 @@ namespace CRCTray.Communication
         public string[] Properties { get; set; }
     }
 
-    struct Logs
-    {
-        public bool Success { get; set; }
-        public string[] Messages { get; set; }
-    }
 }
