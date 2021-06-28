@@ -28,6 +28,8 @@ namespace CRCTray.Helpers
 
         public static void NotifyError(string message)
         {
+            if (String.IsNullOrEmpty(message))
+                message = "Error occurred";
             Notification(message, ToolTipIcon.Error);
         }
 

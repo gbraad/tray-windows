@@ -16,6 +16,7 @@ namespace CRCTray.Communication
 	static class DaemonCommander
 	{
 		private static readonly string _daemonHTTPNamedPipe = "crc-http";
+        private static readonly string _apiPath = "/api";
 
 		private static T getResultsForBasicCommand<T>(string command, int timeout = 20)
 		{
@@ -69,12 +70,14 @@ namespace CRCTray.Communication
 
 		public static SetUnsetConfig SetConfig(ConfigSetCommand cmd)
 		{
-			return getResultsForBasicCommand<SetUnsetConfig>(BasicCommands.ConfigSet);
-		}
+            var result = postResponse(BasicCommands.ConfigSet, JsonSerializer.Serialize(cmd.args), 30);
+            return JsonSerializer.Deserialize<SetUnsetConfig>(result.Result);
+        }
 
 		public static SetUnsetConfig UnsetConfig(ConfigUnsetCommand cmd)
 		{
-			return getResultsForBasicCommand<SetUnsetConfig>(BasicCommands.ConfigGet);
+            var result = postResponse(BasicCommands.ConfigSet, JsonSerializer.Serialize(cmd.args), 30);
+            return JsonSerializer.Deserialize<SetUnsetConfig>(result.Result);
 		}
 
 		public static LogsResult GetLogs()
@@ -87,6 +90,31 @@ namespace CRCTray.Communication
 			return getResponse(command, timeout).Result;
 		}
 
+        private static async Task<string> postResponse(string cmd, string content, int timeout)
+        {
+            try
+            {
+                var httpClient = new NamedPipeHttpClientBuilder(_daemonHTTPNamedPipe)
+                    .WithPerRequestTimeout(TimeSpan.FromSeconds(timeout))
+                    .Build();
+
+                var httpContent = new StringContent(content, Encoding.UTF8, "application/json");
+				string command = String.Format("{0}/{1}", _apiPath, cmd);
+                HttpResponseMessage response = await httpClient.PostAsync(command, httpContent);
+
+                // Allow 500
+                //response.EnsureSuccessStatusCode();
+
+                return await response.Content.ReadAsStringAsync();
+            }
+
+            catch (Exception e)
+            {
+                // re-throw to let the caller deal with the specific error codes
+                throw e;
+            }
+        }
+
 		private static async Task<string> getResponse(string cmd, int timeout)
 		{
 			try
@@ -95,7 +123,7 @@ namespace CRCTray.Communication
 								.WithPerRequestTimeout(TimeSpan.FromSeconds(timeout))
 								.Build();
 
-				string command = String.Format("{0}/{1}", "/api", cmd);
+				string command = String.Format("{0}/{1}", _apiPath, cmd);
 				HttpResponseMessage response = await httpClient.GetAsync(command);
 
 				// Allow 500
