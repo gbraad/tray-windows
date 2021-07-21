@@ -155,6 +155,8 @@ namespace CRCTray
 
         private void SettingsMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.OpenPreferences);
+
             if (settingsWindow == null)
                 settingsWindow = new CrcSettingsForm();
             
@@ -166,6 +168,8 @@ namespace CRCTray
 
         async private void CopyOCLoginForKubeadminMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.CopyOCLoginForAdmin);
+
             try
             {
                 var consoleResult = await Task.Run(TaskHandlers.LoginForKubeadmin);
@@ -180,6 +184,8 @@ namespace CRCTray
 
         async private void CopyOCLoginForDeveloperMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.CopyOCLoginForDeveloper);
+
             try
             {
                 var consoleResult = await Task.Run(TaskHandlers.LoginForDeveloper);
@@ -194,6 +200,8 @@ namespace CRCTray
 
         async private void OpenWebConsoleMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.ClickOpenConsole);
+
             try
             {
                 var consoleResult = await Task.Run(TaskHandlers.WebConsole);
@@ -207,6 +215,8 @@ namespace CRCTray
 
         async private void DeleteMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.ClickDelete);
+
             TrayIcon.NotifyInfo(@"Deleting cluster");
 
             await TaskHelpers.TryTaskAndNotify(TaskHandlers.Delete,
@@ -217,6 +227,8 @@ namespace CRCTray
 
         async private void StopMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.ClickStop);
+
             TrayIcon.NotifyInfo(@"Stopping cluster");
 
             await TaskHelpers.TryTaskAndNotify(TaskHandlers.Stop,
@@ -227,6 +239,8 @@ namespace CRCTray
 
         async private void StartMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.ClickStart);
+
             // Check using get-config if pullSecret is configured
             var configs = await TaskHelpers.TryTaskAndNotify(TaskHandlers.ConfigView,
                 String.Empty,
@@ -254,6 +268,8 @@ namespace CRCTray
                     ["pull-secret-file"] = pullSecretPath
                 };
 
+                TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.EnterPullSecret);
+
                 await TaskHelpers.TryTaskAndNotify(TaskHandlers.SetConfig, pullSecretConfig,
                     "Pull Secret stored",
                     "Pull Secret not stored",
@@ -274,11 +290,15 @@ namespace CRCTray
 
         private void ExitMenu_Click(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.Quit);
+
             QuitApp();
         }
 
         private void ShowAboutForm(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.OpenAbout);
+
             if (about == null)
                 about = new AboutForm();
 
@@ -290,6 +310,8 @@ namespace CRCTray
 
         private void ShowDetailedStatusForm(object sender, EventArgs e)
         {
+            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.OpenStatus);
+
             if (statusForm == null)
                 statusForm = new StatusForm();
 
