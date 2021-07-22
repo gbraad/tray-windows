@@ -61,19 +61,12 @@ namespace CRCTray
 
         private void StartDaemon()
         {
-            Task.Run(() => DaemonLauncher.Start(QuitApp));
+            TaskHelpers.TryTask(() => DaemonLauncher.Start(QuitApp));
         }
 
         private static void pollStatusTimerEventHandler(object source, System.Timers.ElapsedEventArgs e)
         {
-            try
-            {
-                Task.Run(Tasks.Status);
-            }
-            catch
-            {
-                // Status failed, but ignoring
-            }
+            TaskHelpers.TryTask(Tasks.Status);
         }
 
         // populate the context menu for tray icon
@@ -242,11 +235,7 @@ namespace CRCTray
             TaskHelpers.TryTask(Tasks.SendTelemetry, Actions.ClickStart);
 
             // Check using get-config if pullSecret is configured
-            var configs = await TaskHelpers.TryTaskAndNotify(Tasks.ConfigView,
-                String.Empty,
-                String.Empty,
-                String.Empty);
-
+            var configs = await TaskHelpers.TryTask(Tasks.ConfigView);
             if(configs == null)
             {
                 // no config was returned, does this mean a communication error?
