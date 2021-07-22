@@ -10,14 +10,14 @@ using CRCTray.Helpers;
 
 namespace CRCTray
 {
-    public partial class CrcSettingsForm : Form
+    public partial class SettingsForm : Form
     {
         bool configChanged = false;
         List<string> configsNeedingUnset;
         ConfigResult currentConfig;
         Dictionary<string, dynamic> changedConfigs;
         
-        public CrcSettingsForm()
+        public SettingsForm()
         {
             InitializeComponent();
             getConfigurationAndResetChanged();

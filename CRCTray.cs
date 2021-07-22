@@ -158,7 +158,7 @@ namespace CRCTray
             TaskHelpers.TryTask(Tasks.SendTelemetry, Actions.OpenPreferences);
 
             if (settingsWindow == null)
-                settingsWindow = new CrcSettingsForm();
+                settingsWindow = new SettingsForm();
             
             if (!settingsWindow.Visible)
                 settingsWindow.Show();
