@@ -27,7 +27,7 @@ namespace CRCTray
         {
             this.changedConfigs = new Dictionary<string, dynamic>();
             this.configsNeedingUnset = new List<string>();
-            currentConfig = await Task.Run(TaskHandlers.ConfigView);
+            currentConfig = await Task.Run(Tasks.ConfigView);
             loadConfigurationValues(currentConfig);
             configChanged = false;
         }
@@ -142,13 +142,13 @@ namespace CRCTray
         // Apply button on properties tab
         private async void ApplyButton_Click(object sender, EventArgs e)
         {
-            TaskHelpers.TryTask(TaskHandlers.SendTelemetry, Actions.ApplyPreferences);
+            TaskHelpers.TryTask(Tasks.SendTelemetry, Actions.ApplyPreferences);
 
             // TODO: refactor
 
             if (this.configChanged && changedConfigs.Count > 0) 
             {
-                await TaskHelpers.TryTaskAndNotify(TaskHandlers.SetConfig, changedConfigs,
+                await TaskHelpers.TryTaskAndNotify(Tasks.SetConfig, changedConfigs,
                     "Settings applied",
                     "Settings not applied",
                     String.Empty);
@@ -156,7 +156,7 @@ namespace CRCTray
 
             if (this.configsNeedingUnset.Count > 0)
             {
-                await TaskHelpers.TryTaskAndNotify(TaskHandlers.UnsetConfig, configsNeedingUnset,
+                await TaskHelpers.TryTaskAndNotify(Tasks.UnsetConfig, configsNeedingUnset,
                     "Settings applied",
                     "Settings not applied",
                     String.Empty);
